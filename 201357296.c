@@ -6,13 +6,15 @@
 char to_base_27(char input);
 char *strrev(char *str);
 int get_b27_index(char input);
-int* back_to_27(long long input);
+char *back_to_text(int* input);
+
 
 typedef struct{
   char value[193];
   int len;
 } bigint;
 
+int* back_to_27(bigint input);
 bigint mult(bigint x, bigint y);
 bigint new(char *input);
 bigint minus(bigint x);
@@ -20,13 +22,19 @@ bigint to_base_10(int *input, int length);
 bigint add(bigint x, bigint y);
 bigint modulo(bigint x, bigint m);
 bigint encrypt(bigint m, bigint e, bigint n);
+bigint divide(bigint x, bigint y);
+bigint subtract(bigint x, bigint y);
+bigint compute_for_d(bigint e, bigint n);
 
 
 
 
 void main(){
   FILE *fp;
-  fp = fopen("INPUT.txt", "r");
+  FILE *fp1;
+  fp1 =fopen("201357296.txt", "w+");
+  fp = fopen("mp2.txt", "r");
+
   int ctr = 0;
   char twosev[] = "27";
   bigint tw = new(twosev);
@@ -35,12 +43,13 @@ void main(){
   int m[190], size;
   int *b27;
   bigint base10_message;
-  bigint n, p, q, e, phin, minusp, minusq, c;
-  char line[255];
+  bigint n, p, q, e, phin, minusp, minusq, c, d;
+  char line[255], *out;
   fgets(line, 255, fp);
   char sender[10], reciever[10], message[255];
   while (sscanf(line, "CASE %d", &ctr) == 1){
     printf("%s", line);
+    fprintf(fp1,"%s", line);
     fscanf(fp, "%[^,], %s\n", pbuf, qbuf);
     fscanf(fp, "%s\n", ebuf);
     printf("p = %s, q = %s, e = %s\n", pbuf,qbuf,ebuf);
@@ -72,16 +81,11 @@ void main(){
         strrev(buffer);
         printf("Base 10: %s,%d\n", buffer,base10_message.len);
         c = encrypt(base10_message, e, n);
-        // ===========================//
-        //DO STUFF HERE               //
-        //============================//
-
-      // //  b27 = back_to_27(base10_message);
-      //   size = b27[0]; //first element contains size
-      //   printf("size: %d", size);
-      //   for (int i=0; i<size; i++){
-      //     printf("bb27: %d\n", b27[i]);
-      //   }
+        b27 = back_to_27(c);
+        printf("%d!", b27[0]);
+        out = back_to_text(b27);
+        printf("Message is: %s", out);
+        fprintf(fp1,"Alice sent: %s\n", out);
         fgets(line,255,fp);
       }
       else if(sscanf(line, "Bob received the message: %[^from] from Alice", message) == 1){
@@ -95,17 +99,13 @@ void main(){
         strcpy(buffer, base10_message.value);
         strrev(buffer);
         printf("Base 10: %s,%d\n", buffer,base10_message.len);
-
-        // ===========================//
-        //DO STUFF HERE               //
-        //============================//
-
-      // //  b27 = back_to_27(base10_message);
-      //   size = b27[0]; //first element contains size
-      //   printf("size: %d", size);
-      //   for (int i=1; i<size; i++){
-      //     printf("bb27: %d\n", b27[i]);
-      //   }
+        d = compute_for_d(n, e);
+        c = encrypt(base10_message, d, n);
+        b27 = back_to_27(c);
+        printf("%d!", b27[0]);
+        out = back_to_text(b27);
+        printf("Message is: %s", out);
+        fprintf(fp1,"Bob received: %s\n", out);
 
         fgets(line,255,fp);
       }
@@ -117,7 +117,39 @@ void main(){
   // strrev(buffer);
   // printf("%s, value", buffer);     FOR PRINTING
   }
+  fclose(fp);
+  fclose(fp1);
 }
+
+bigint compute_for_d(bigint e, bigint n){
+  bigint n0 = n, t, q;
+  char zero[] = "0", three[] = "3", one[] = "1", temp[199];
+  bigint x0 = new(zero), x1 = new(one);
+  if(strcmp(n.value, "1") == 0)
+    return n;
+  strcpy(temp, e.value);
+  strrev(temp);
+  while(atoi(temp) > 1){
+    printf("haha, %s\n", temp);
+    q = divide(e,n);
+    t = n;
+    n = modulo(e, n);
+    e = t;
+    t = x0;
+    x0 = subtract(x1, mult(q, x0));
+    x1 = t;
+    strcpy(temp, e.value);
+    strrev(temp);
+  }
+  strcpy(temp, x1.value);
+  strrev(temp);
+  if (atoi(temp) < 0)
+    x1 = add(x1, n0);
+  //x1 = new(three);
+  printf("D IS %s", x1.value );
+  return x1;
+}
+
 bigint new(char *input){
   bigint x;
   x.len = strlen(input);
@@ -126,36 +158,141 @@ bigint new(char *input){
 }
 
 bigint encrypt(bigint m, bigint e, bigint n){
-  char *one = "1";
+  char buf[199], buf1[199];
+  strcpy(buf, m.value);
+  strcpy(buf1, e.value);
+  strrev(buf);
+  strrev(buf1);
+  char *one = "1", *two = "2";
   bigint t = new(one);
+  bigint temp1;
+  bigint z = new(two);
   bigint c, temp = e;
-  while(temp.value != "0"){
-    printf("%s", temp.value);
-    temp = minus(temp);
-    t = mult(modulo(t,n),modulo(m,n));
-    printf("%s\n", t.value);
+  m = modulo(m, n);
+  while(strcmp(temp1.value, "0") != 0){
+    temp1 = modulo(e,z);
+    if(strcmp(temp1.value, "1") == 0)
+      t = modulo(mult(t,m),n);
+    e = divide(e, z);
+    m = modulo(mult(m,m),n);
   }
-  t = modulo(t,n);
+  strcpy(buf, t.value);
+  strrev(buf);
+  printf("Base 10 C: %s, %d\n", buf, t.len);
   return t;
+}
+bigint subtract(bigint x, bigint y){
+  char r[199], buf[199];
+  int i = 0, j = 0, k =0, borrow = 0, maxlen = 0;
+  int result[199] = { 0 };
+  bigint res;
+  maxlen = (x.len > y.len) ? x.len : y.len;
+  while(i<x.len && j <y.len){
+    result[k] = ((x.value[k] - '0') - (y.value[k] - '0')) - borrow;
+    if (result[k] < 0){
+      //printf("%d", result[k]);
+      result[k] +=10;
+      borrow = 1;
+    }
+    else
+      borrow = 0;
+    i++;
+    j++;
+    k++;
+  }
+  //printf("%d%d", result[0], result[1]);
+  while(i<x.len){
+    result[k]=(x.value[i]-'0')-borrow;
+    if(result[k]<0){
+      result[k]+=10;
+      borrow=1;
+    }
+    else
+      borrow=0;
+    i++;
+    k++;
+  }
+
+  while(j<y.len){
+    result[k]=(y.value[j]-'0')-borrow;
+    if(result[k]<0){
+      result[k]+=10;
+      borrow=1;
+    }
+    else
+      borrow=0;
+    j++;
+    k++;
+  }
+
+  for (int ctr = maxlen - 1; ctr>0; ctr--){
+    if(result[ctr] == 0)
+      maxlen = ctr;
+      break;
+  }
+
+  for(int ctr = 0; ctr<maxlen; ctr++){
+    r[ctr] = result[ctr] + '0';
+  }
+  r[maxlen] = '\0';
+  strcpy(res.value, r);
+  res.len = maxlen;
+  strcpy(buf, res.value);
+  strrev(buf);
+  //printf("Difference: %s\n", buf);
+  return res;
+}
+
+bigint divide(bigint x, bigint y){
+  bigint result;
+
+  char r[199], buf[199], buf1[199];
+  strcpy(buf, x.value);
+  strrev(buf);
+  strcpy(buf1, y.value);
+  strrev(buf1);
+  printf("\n%s divide by %s: ", buf, buf1);
+  int i = 0;
+  while(1){
+    if (x.len < y.len)
+      break;
+    else if (x.len == y.len && x.value[x.len-1] - '0' < y.value[y.len-1] - '0')
+      break;
+    else{
+      x = subtract(x, y);
+    }
+    i++;
+  }
+  printf("Quotient: %d\n", i);
+  snprintf(r, 199,"%d", i);
+  result = new(r);
+  return result;
 }
 
 bigint modulo(bigint x, bigint m){
-  char temp[199], val[199];
-  long long remainder;
-  strcpy(val,m.value);
-  strrev(val);
-  strcpy(temp, x.value);
-  strrev(temp);
-  long long mod = atoi(val);
-  printf("mod is %lld\t", mod);
-  for(int i = 0; i<x.len; i++){
-     remainder = (remainder * 10 + temp[i] - '0') % mod;
+  bigint result;
+
+  char r[199], buf[199], buf1[199];
+  strcpy(buf, x.value);
+  strrev(buf);
+  strcpy(buf1, m.value);
+  strrev(buf1);
+  printf("\n%s Modulo %s: ", buf, buf1);
+  int i = 0;
+  while(1){
+    if (x.len < m.len)
+      break;
+    else if (x.len == m.len && x.value[x.len-1] - '0' < m.value[m.len-1] - '0')
+      break;
+    else{
+      x = subtract(x, m);
+    }
+    i++;
   }
-  snprintf(temp, 199,"%lld", remainder);
-  bigint y = new(temp);
-  strrev(temp);
-  printf("Modulo: %s\n", temp);
-  return y;
+  strcpy(buf, x.value);
+  strrev(buf);
+  printf("Modulo: %s\n", buf);
+  return x;
 }
 
 bigint add(bigint x, bigint y){
@@ -242,24 +379,31 @@ bigint mult(bigint x, bigint y){
   return z;
 }
 
-int* back_to_27(long long input){
+int* back_to_27(bigint input){
+  char twosev[] = "27";
+  bigint tw = new(twosev);
+  bigint temp1;
   int t[190];
-  int j;
+  int j = 0;
   int *result = malloc(190 * sizeof(*result));
-  long long temp = input;
+  bigint temp = input;
   int c = 0;
-  while(temp !=0 ){
-    t[c] = temp%27;
-    temp /=27;
+  while(strcmp(temp.value, "0") != 0){
+    temp1 = modulo(temp, tw);
+    strrev(temp1.value);
+    t[c] = atoi(temp1.value);
+    temp =  divide(temp, tw);
     c++; //hehe
   }
 
-  for (int i = c-1, j = 1; i>=0; i--, j++){
+  j = 1;
+  for (int i = c-1; i>=0; i--){
     result[j] = t[i];
     printf("cbb: %d\n", result[j]);
+    j++;
   }
   result[0] = j; //first element is the size of the int array
-
+  printf("%d!!HEHE",result[0]);
   return result;
 
 }
@@ -276,6 +420,7 @@ bigint to_base_10(int *input, int length){
     result = add(result, mult(in, multiplier));
     multiplier = mult(multiplier, tw);
   }
+  result.len = strlen(result.value);
   return result;
 }
 
@@ -332,6 +477,15 @@ int get_b27_index(char input){
   return ans;
 }
 
+char *back_to_text(int* input){
+  char string[27] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ", *buf = malloc(199 * sizeof(char));
+  int input_length = input[0];
+  for(int i = 0; i<input_length - 1; i++){
+    buf[i] = string[input[i+1]];
+  }
+  buf[input_length] = '\0';
+  return buf;
+}
 
 
 char to_base_27(char input){

@@ -1,0 +1,6 @@
+CASE 1
+3,11
+7
+Alice will send the message: C to Bob
+Bob received the message: BC from Alice
+END
